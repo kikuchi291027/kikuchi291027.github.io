@@ -71,14 +71,15 @@
     .tab-btn:hover {
       background: #e0f2fe;
     }
-    .info-box {
-      background: #f1f5f9;
-      border-radius: 12px;
-      padding: 8px 10px;
-      margin-bottom: 8px;
-      border: 1px solid #e2e8f0;
-      font-size: 12px;
-    }
+   .info-box {
+  background: #fef9c3;           /* 明るい薄い黄色 */
+  border-radius: 12px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border: 1px solid #facc15;     /* 少し濃い黄色で枠線 */
+  font-size: 12px;
+}
+
     .info-title {
       font-weight: 600;
       color: #0f172a;
@@ -214,18 +215,18 @@
 
         children.push(
           e('circle', {
-              key: 'pt-' + i,
-              cx: x,
-              cy: y,
-              r: isActive ? 7 : 5,
-              fill: isActive ? '#0f766e' : '#38bdf8',
-              stroke: isActive ? '#064e3b' : '#0ea5e9',
-              strokeWidth: isActive ? 2 : 1,
-              style: { cursor: 'pointer', transition: 'all 0.15s ease-out' },
-              onMouseEnter: function () { setActiveIndex(i); },
-            }
-          )
-        );
+  key: 'pt-' + i,
+  cx: x,
+  cy: y,
+  // ここを変更：アクティブ 11、通常 9 に
+  r: isActive ? 11 : 9,
+  fill: isActive ? '#0f766e' : '#38bdf8',
+  stroke: isActive ? '#064e3b' : '#0ea5e9',
+  strokeWidth: isActive ? 2 : 1,
+  style: { cursor: 'pointer', transition: 'all 0.15s ease-out' },
+  onMouseEnter: function () { setActiveIndex(i); },
+})
+
 
         children.push(
           e('text', {
