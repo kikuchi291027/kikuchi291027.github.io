@@ -2,44 +2,329 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>React テストページ</title>
+  <title>2025年 阿仁川鮎釣りグラフ（React＋SVG版）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body style="margin:0; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#f8fafc; color:#0f172a;">
-  <!-- React が描画する場所 -->
   <div id="root"></div>
 
-  <!-- React本体とReactDOMをCDNから読み込み（UMD版） -->
+  <!-- React本体とReactDOM（CDN） -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 
-  <!-- Reactコード本体（JSXなし・Babelなしの超シンプル版） -->
+  <!-- Reactアプリ本体（JSXもBabelも使わない） -->
   <script>
-    // root要素を取得
-    var container = document.getElementById('root');
+    const e = React.createElement;
+    const { useState } = React;
 
-    // rootを作成
-    var root = ReactDOM.createRoot(container);
+    // 代表日のデータ
+    const dailyData2025 = [
+      { date: '7/19', label: '7月19日', topCatch: 95,  memo: '温泉下など・盛期手前の好調日' },
+      { date: '8/4',  label: '8月4日',  topCatch: 86,  memo: '湯口内など・高水準の釣果' },
+      { date: '8/5',  label: '8月5日',  topCatch: 0,   memo: '増水・川止め相当' },
+      { date: '8/14', label: '8月14日', topCatch: 111, memo: 'パチンコで束釣り' },
+      { date: '8/15', label: '8月15日', topCatch: 28,  memo: '最上流部など・増水の影響後' },
+      { date: '9/17', label: '9月17日', topCatch: 13,  memo: '増水・茶濁の中での釣果' },
+    ];
 
-    // 表示するコンテンツ（<div>の中に<h1>, <p>を置くイメージ）
-    var element = React.createElement(
-      'div',
-      { style: { padding: '24px 16px' } },
-      [
-        React.createElement(
-          'h1',
-          { key: 'h1', style: { fontSize: '22px', marginBottom: '8px' } },
-          'Reactテスト成功'
+    // 月別のざっくり平均値（イメージ）
+    const monthlyData2025 = [
+      { month: '7月', avgCatch: 45, memo: '前半から高水準' },
+      { month: '8月', avgCatch: 40, memo: '中旬ピーク、その後増水の影響' },
+      { month: '9月', avgCatch: 12, memo: '増水・川止め多く釣行機会少ない' },
+    ];
+
+    function DailyGraph({ data }) {
+      const maxCatch = 120;
+      const xStart = 100;
+      const xEnd = 700;
+      const yBottom = 360;
+      const yTop = 120;
+      const spanY = yBottom - yTop;
+
+      // 折れ線用のポイント文字列を作成
+      const polyPoints = data.map((d, i) => {
+        const x = xStart + ((xEnd - xStart) * i) / (data.length - 1);
+        const y = yBottom - (d.topCatch / maxCatch) * spanY;
+        return x + ',' + y;
+      }).join(' ');
+
+      // SVG の子要素を配列で組み立てる
+      const children = [];
+
+      // 背景と枠
+      children.push(
+        e('rect', { key: 'bg', x: 0, y: 0, width: 800, height: 400, fill: '#f8fafc' }),
+        e('rect', { key: 'frame', x: 60, y: 30, width: 700, height: 330, fill: '#ffffff', stroke: '#e2e8f0' })
+      );
+
+      // グリッド線
+      const gridYs = [360, 320, 280, 240, 200, 160, 120];
+      gridYs.forEach((y, idx) => {
+        children.push(
+          e('line', {
+            key: 'grid-' + idx,
+            x1: 60, y1: y, x2: 760, y2: y,
+            stroke: '#e2e8f0',
+            'stroke-dasharray': '2 4',
+          })
+        );
+      });
+
+      // 縦軸ラベル
+      const labelVals = [0, 20, 40, 60, 80, 100, 120];
+      const labelYs = [365, 325, 285, 245, 205, 165, 125];
+      labelVals.forEach((v, i) => {
+        children.push(
+          e('text', {
+            key: 'ylabel-' + v,
+            x: 55,
+            y: labelYs[i],
+            fontSize: 11,
+            textAnchor: 'end',
+          }, String(v))
+        );
+      });
+      children.push(
+        e('text', {
+          key: 'ytitle',
+          x: 20,
+          y: 40,
+          fontSize: 11,
+          transform: 'rotate(-90 20 40)',
+        }, 'トップ釣果（尾）')
+      );
+
+      // 折れ線
+      children.push(
+        e('polyline', {
+          key: 'line',
+          fill: 'none',
+          stroke: '#0f766e',
+          strokeWidth: 2.5,
+          points: polyPoints,
+        })
+      );
+
+      // 各ポイント（○＋title）
+      data.forEach((d, i) => {
+        const x = xStart + ((xEnd - xStart) * i) / (data.length - 1);
+        const y = yBottom - (d.topCatch / maxCatch) * spanY;
+        const titleText = d.label + '：' + d.topCatch + '尾（' + d.memo + '）';
+
+        children.push(
+          e('circle', { key: 'pt-' + i, cx: x, cy: y, r: 6, fill: '#0f766e' },
+            e('title', null, titleText)
+          )
+        );
+
+        // 日付ラベル
+        children.push(
+          e('text', {
+            key: 'xlabel-' + i,
+            x: x,
+            y: 380,
+            fontSize: 11,
+            textAnchor: 'middle',
+          }, d.date)
+        );
+      });
+
+      // 横軸タイトル
+      children.push(
+        e('text', {
+          key: 'xtitle',
+          x: 410,
+          y: 395,
+          fontSize: 11,
+          textAnchor: 'middle',
+        }, '日付（代表日）')
+      );
+
+      // 凡例
+      children.push(
+        e('rect', { key: 'legend-box', x: 620, y: 40, width: 130, height: 30, fill: '#ffffff', stroke: '#e2e8f0' }),
+        e('line', { key: 'legend-line', x1: 630, y1: 55, x2: 650, y2: 55, stroke: '#0f766e', strokeWidth: 2.5 }),
+        e('circle', { key: 'legend-dot', cx: 640, cy: 55, r: 4, fill: '#0f766e' }),
+        e('text', { key: 'legend-text', x: 660, y: 59, fontSize: 11 }, 'トップ釣果（尾）')
+      );
+
+      return e('svg', { width: '100%', viewBox: '0 0 800 400' }, children);
+    }
+
+    function MonthlyGraph({ data }) {
+      const maxAvg = 50; // スケール用（0〜50尾くらい）
+      const xPositions = [200, 400, 600];
+      const yBottom = 360;
+      const yTop = 160;
+      const spanY = yBottom - yTop;
+
+      const children = [];
+
+      // 背景と枠
+      children.push(
+        e('rect', { key: 'bg', x: 0, y: 0, width: 800, height: 400, fill: '#f8fafc' }),
+        e('rect', { key: 'frame', x: 60, y: 30, width: 700, height: 330, fill: '#ffffff', stroke: '#e2e8f0' })
+      );
+
+      // グリッド（0〜50を10刻み）
+      const gridVals = [0, 10, 20, 30, 40, 50];
+      gridVals.forEach((v, i) => {
+        const y = yBottom - (v / maxAvg) * spanY;
+        children.push(
+          e('line', {
+            key: 'grid-' + v,
+            x1: 60, y1: y, x2: 760, y2: y,
+            stroke: '#e2e8f0',
+            'stroke-dasharray': '2 4',
+          })
+        );
+        children.push(
+          e('text', {
+            key: 'ylabel-' + v,
+            x: 55,
+            y: y + 5,
+            fontSize: 11,
+            textAnchor: 'end',
+          }, String(v))
+        );
+      });
+
+      children.push(
+        e('text', {
+          key: 'ytitle',
+          x: 20,
+          y: 40,
+          fontSize: 11,
+          transform: 'rotate(-90 20 40)',
+        }, '平均釣獲（尾／人日）')
+      );
+
+      // 各月のバー
+      data.forEach((d, i) => {
+        const xCenter = xPositions[i];
+        const barWidth = 80;
+        const barHeight = (d.avgCatch / maxAvg) * spanY;
+        const yTopBar = yBottom - barHeight;
+        const titleText = d.month + '：平均' + d.avgCatch + '尾（' + d.memo + '）';
+
+        children.push(
+          e('rect', {
+            key: 'bar-' + i,
+            x: xCenter - barWidth / 2,
+            y: yTopBar,
+            width: barWidth,
+            height: barHeight,
+            fill: '#0ea5e9',
+          }, e('title', null, titleText))
+        );
+
+        // 月ラベル
+        children.push(
+          e('text', {
+            key: 'xlabel-' + i,
+            x: xCenter,
+            y: 380,
+            fontSize: 11,
+            textAnchor: 'middle',
+          }, d.month)
+        );
+      });
+
+      // 横軸タイトル
+      children.push(
+        e('text', {
+          key: 'xtitle',
+          x: 410,
+          y: 395,
+          fontSize: 11,
+          textAnchor: 'middle',
+        }, '月別平均釣獲（イメージ）')
+      );
+
+      // 凡例
+      children.push(
+        e('rect', { key: 'legend-box', x: 620, y: 40, width: 150, height: 30, fill: '#ffffff', stroke: '#e2e8f0' }),
+        e('rect', { key: 'legend-bar', x: 630, y: 50, width: 16, height: 10, fill: '#0ea5e9' }),
+        e('text', { key: 'legend-text', x: 650, y: 59, fontSize: 11 }, '平均釣獲（尾／人日）')
+      );
+
+      return e('svg', { width: '100%', viewBox: '0 0 800 400' }, children);
+    }
+
+    function App() {
+      const [view, setView] = useState('daily');
+
+      const containerStyle = {
+        maxWidth: '900px',
+        margin: '24px auto',
+        padding: '0 16px',
+      };
+      const cardStyle = {
+        background: '#ffffff',
+        borderRadius: '12px',
+        padding: '16px 20px',
+        boxShadow: '0 8px 18px rgba(15,23,42,0.06)',
+        border: '1px solid #e2e8f0',
+        marginTop: '16px',
+      };
+      const tabBase = {
+        fontSize: '13px',
+        padding: '6px 10px',
+        borderRadius: '999px',
+        border: '1px solid #cbd5f5',
+        background: '#ffffff',
+        color: '#0f172a',
+        cursor: 'pointer',
+        marginRight: '8px',
+      };
+      const tabActive = {
+        ...tabBase,
+        background: '#0f766e',
+        color: '#ffffff',
+        borderColor: '#0f766e',
+      };
+
+      return e('div', { style: containerStyle }, [
+        e('h1', { key: 'h1', style: { fontSize: '22px', marginBottom: '4px' } }, '2025年 阿仁川鮎釣りグラフ'),
+        e('p', { key: 'p1', style: { fontSize: '13px', color: '#64748b', marginBottom: '8px' } },
+          '代表日のトップ釣果と、月別のざっくり平均を切り替えて表示します。マウスを丸やバーに乗せると詳しい説明が出ます。'
         ),
-        React.createElement(
-          'p',
-          { key: 'p1', style: { fontSize: '14px', color: '#64748b' } },
-          'この文章が見えれば、React自体は正常に動いています。'
-        )
-      ]
-    );
+        e('div', { key: 'card', style: cardStyle }, [
+          e('div', { key: 'tabs', style: { marginBottom: '8px' } }, [
+            e('button', {
+              key: 'btn-daily',
+              style: view === 'daily' ? tabActive : tabBase,
+              onClick: function () { setView('daily'); },
+            }, '代表日グラフ'),
+            e('button', {
+              key: 'btn-monthly',
+              style: view === 'monthly' ? tabActive : tabBase,
+              onClick: function () { setView('monthly'); },
+            }, '月別グラフ'),
+          ]),
+          view === 'daily'
+            ? e('div', { key: 'view-daily' }, [
+                e('p', {
+                  key: 'p-d',
+                  style: { fontSize: '13px', color: '#64748b', marginBottom: '8px' },
+                }, '縦軸：トップ釣果（尾）／横軸：日付（代表日）。増水・川止めの日も0尾として入れています。'),
+                e(DailyGraph, { key: 'g-d', data: dailyData2025 }),
+              ])
+            : e('div', { key: 'view-monthly' }, [
+                e('p', {
+                  key: 'p-m',
+                  style: { fontSize: '13px', color: '#64748b', marginBottom: '8px' },
+                }, '縦軸：1人あたり平均釣獲（尾／人日・イメージ）／横軸：月。7月〜お盆と、その後の差をざっくり見るための図です。'),
+                e(MonthlyGraph, { key: 'g-m', data: monthlyData2025 }),
+              ]),
+        ]),
+      ]);
+    }
 
-    // 画面に描画
-    root.render(element);
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(e(App));
   </script>
 </body>
 </html>
