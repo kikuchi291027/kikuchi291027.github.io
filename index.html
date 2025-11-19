@@ -71,15 +71,14 @@
     .tab-btn:hover {
       background: #e0f2fe;
     }
-   .info-box {
-  background: #fef9c3;           /* 明るい薄い黄色 */
-  border-radius: 12px;
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  border: 1px solid #facc15;     /* 少し濃い黄色で枠線 */
-  font-size: 12px;
-}
-
+    .info-box {
+      background: #fef9c3;           /* 目立つ薄い黄色 */
+      border-radius: 12px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      border: 1px solid #facc15;     /* 少し濃い黄色の枠線 */
+      font-size: 12px;
+    }
     .info-title {
       font-weight: 600;
       color: #0f172a;
@@ -104,12 +103,12 @@
 
     // 代表日のデータ
     const dailyData2025 = [
-      { date: '7/19', label: '7月19日', topCatch: 95, waterLevel: -0.67, note: '温泉下など・盛期手前の好調日' },
-      { date: '8/4',  label: '8月4日',  topCatch: 86, waterLevel: -0.58, note: '湯口内など・高水準の釣果' },
-      { date: '8/5',  label: '8月5日',  topCatch: 0,  waterLevel: 1.3,  note: '増水・川止め相当の1日' },
+      { date: '7/19', label: '7月19日', topCatch: 95,  waterLevel: -0.67, note: '温泉下など・盛期手前の好調日' },
+      { date: '8/4',  label: '8月4日',  topCatch: 86,  waterLevel: -0.58, note: '湯口内など・高水準の釣果' },
+      { date: '8/5',  label: '8月5日',  topCatch: 0,   waterLevel: 1.3,  note: '増水・川止め相当の1日' },
       { date: '8/14', label: '8月14日', topCatch: 111, waterLevel: -0.6, note: 'パチンコで束釣りのピーク' },
-      { date: '8/15', label: '8月15日', topCatch: 28, waterLevel: 0.19, note: '増水後の回復途中' },
-      { date: '9/17', label: '9月17日', topCatch: 13, waterLevel: 1.0,  note: '増水・茶濁の中での残りアユ' },
+      { date: '8/15', label: '8月15日', topCatch: 28,  waterLevel: 0.19, note: '増水後の回復途中' },
+      { date: '9/17', label: '9月17日', topCatch: 13,  waterLevel: 1.0,  note: '増水・茶濁の中での残りアユ' },
     ];
 
     // 月別のざっくり平均値（イメージ）
@@ -122,7 +121,7 @@
     // 代表日グラフ（React＋SVG）
     function DailyGraph(props) {
       const data = props.data;
-      const [activeIndex, setActiveIndex] = useState(3); // デフォルトは8/14の束釣りにフォーカス
+      const [activeIndex, setActiveIndex] = useState(3); // デフォルトは8/14
 
       const maxCatch = 120;
       const minCatch = 0;
@@ -132,7 +131,6 @@
       const yTop = 120;
       const spanY = yBottom - yTop;
 
-      // アクティブポイント
       const active = data[activeIndex];
 
       const children = [];
@@ -143,9 +141,9 @@
         e('rect', { key: 'frame', x: 60, y: 30, width: 700, height: 330, fill: '#ffffff', stroke: '#e2e8f0' })
       );
 
-      // グリッド線
+      // グリッド
       const gridVals = [0, 20, 40, 60, 80, 100, 120];
-      gridVals.forEach((v, i) => {
+      gridVals.forEach((v) => {
         const y = yBottom - ((v - minCatch) / (maxCatch - minCatch)) * spanY;
         children.push(
           e('line', {
@@ -176,7 +174,7 @@
         }, 'トップ釣果（尾）')
       );
 
-      // 折れ線パス
+      // 折れ線
       const polyPoints = data.map((d, i) => {
         const x = xStart + ((xEnd - xStart) * i) / (data.length - 1);
         const y = yBottom - ((d.topCatch - minCatch) / (maxCatch - minCatch)) * spanY;
@@ -193,7 +191,7 @@
         })
       );
 
-      // 各ポイント＋縦のガイドライン
+      // 各ポイント
       data.forEach((d, i) => {
         const x = xStart + ((xEnd - xStart) * i) / (data.length - 1);
         const y = yBottom - ((d.topCatch - minCatch) / (maxCatch - minCatch)) * spanY;
@@ -215,18 +213,19 @@
 
         children.push(
           e('circle', {
-  key: 'pt-' + i,
-  cx: x,
-  cy: y,
-  // ここを変更：アクティブ 11、通常 9 に
-  r: isActive ? 11 : 9,
-  fill: isActive ? '#0f766e' : '#38bdf8',
-  stroke: isActive ? '#064e3b' : '#0ea5e9',
-  strokeWidth: isActive ? 2 : 1,
-  style: { cursor: 'pointer', transition: 'all 0.15s ease-out' },
-  onMouseEnter: function () { setActiveIndex(i); },
-})
-
+              key: 'pt-' + i,
+              cx: x,
+              cy: y,
+              // ★ここを大きくしました
+              r: isActive ? 11 : 9,
+              fill: isActive ? '#0f766e' : '#38bdf8',
+              stroke: isActive ? '#064e3b' : '#0ea5e9',
+              strokeWidth: isActive ? 2 : 1,
+              style: { cursor: 'pointer', transition: 'all 0.15s ease-out' },
+              onMouseEnter: function () { setActiveIndex(i); },
+            }
+          )
+        );
 
         children.push(
           e('text', {
@@ -255,9 +254,11 @@
           e('p', { key: 'l1', className: 'info-line' }, 'トップ釣果：' + active.topCatch + '尾'),
           e('p', { key: 'l2', className: 'info-line' }, '水位（概算）：' + active.waterLevel + ' m'),
           e('p', { key: 'l3', className: 'info-line' }, active.note),
-          e('p', { key: 'tip', className: 'info-line', style: { marginTop: 4, color: '#94a3b8' } },
-            '※丸にマウスを乗せると、右上の情報が切り替わります。'
-          ),
+          e('p', {
+            key: 'tip',
+            className: 'info-line',
+            style: { marginTop: 4, color: '#6b7280' }
+          }, '※丸にマウスを乗せると、上の情報が切り替わります。'),
         ]),
         e('svg', { key: 'graph', width: '100%', viewBox: '0 0 800 400' }, children),
       ]);
@@ -368,9 +369,11 @@
           e('p', { key: 'l1', className: 'info-line' }, '平均釣獲：' + active.avgCatch + '尾／人日'),
           e('p', { key: 'l2', className: 'info-line' }, '川止め日数（目安）：' + active.stopDays + '日／月'),
           e('p', { key: 'l3', className: 'info-line' }, active.note),
-          e('p', { key: 'tip', className: 'info-line', style: { marginTop: 4, color: '#94a3b8' } },
-            '※棒グラフにマウスを乗せると、上の説明が切り替わります。'
-          ),
+          e('p', {
+            key: 'tip',
+            className: 'info-line',
+            style: { marginTop: 4, color: '#6b7280' }
+          }, '※棒グラフにマウスを乗せると、上の説明が切り替わります。'),
         ]),
         e('svg', { key: 'graph', width: '100%', viewBox: '0 0 800 400' }, children),
       ]);
