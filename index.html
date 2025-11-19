@@ -2,10 +2,224 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>阿仁川テストページ</title>
+  <title>2025年 阿仁川鮎釣りグラフ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tailwind 的な見た目を軽く整えたい場合は CSS を好きに入れてOK -->
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-top: 16px;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e2e8f0;
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 4px;
+    }
+    h2 {
+      font-size: 18px;
+      margin: 0 0 4px;
+    }
+    p {
+      font-size: 13px;
+      margin: 0 0 4px;
+      color: #64748b;
+    }
+  </style>
+
+  <!-- React / ReactDOM / Babel / Recharts を CDN から読み込み -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
 </head>
 <body>
-  <h1>阿仁川テストページ</h1>
-  <p>この文字が見えれば、GitHub Pages は正常に動いています。</p>
+  <div id="root"></div>
+
+  <!-- JSX を直接書くために type="text/babel" にしています -->
+  <script type="text/babel">
+    const {
+      LineChart,
+      Line,
+      XAxis,
+      YAxis,
+      CartesianGrid,
+      Tooltip,
+      Legend,
+      ResponsiveContainer,
+      BarChart,
+      Bar,
+    } = Recharts;
+
+    // 代表日のトップ釣果と水位データ
+    const catchAndLevelData = [
+      { date: '7/19', label: '7月19日', topCatch: 95, waterLevel: -0.67 },
+      { date: '8/4',  label: '8月4日', topCatch: 86, waterLevel: -0.58 },
+      { date: '8/5',  label: '8月5日', topCatch: 0,  waterLevel: 1.3 },
+      { date: '8/14', label: '8月14日', topCatch: 111, waterLevel: -0.6 },
+      { date: '8/15', label: '8月15日', topCatch: 28, waterLevel: 0.19 },
+      { date: '9/17', label: '9月17日', topCatch: 13, waterLevel: 1.0 },
+    ];
+
+    // 月別平均釣獲と川止め日数（ここは実数値があれば入れ替え）
+    const monthlySummaryData = [
+      { month: '7月', avgCatch: 45, stopDays: 0 },
+      { month: '8月', avgCatch: 40, stopDays: 8 },
+      { month: '9月', avgCatch: 12, stopDays: 12 },
+    ];
+
+    function Ayu2025Graphs() {
+      return (
+        <div className="container">
+          <div>
+            <h1>2025年 阿仁川鮎釣りシーズン（例示グラフ）</h1>
+            <p>※HP記事から拾った代表日をもとにしたイメージグラフです（厳密な統計ではありません）。</p>
+          </div>
+
+          <div className="card">
+            <h2>代表日のトップ釣果と水位の推移（2025年）</h2>
+            <p>左軸：1人のトップ釣果（尾）／右軸：阿仁前田付近の水位変化（m・概算）。</p>
+            <div style={{ width: "100%", height: 320 }}>
+              <ResponsiveContainer>
+                <LineChart
+                  data={catchAndLevelData}
+                  margin={{ top: 10, right: 40, bottom: 30, left: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    yAxisId="left"
+                    label={{
+                      value: 'トップ釣果（尾）',
+                      angle: -90,
+                      position: 'insideLeft',
+                      fontSize: 11,
+                    }}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    label={{
+                      value: '水位（m / 概算）',
+                      angle: 90,
+                      position: 'insideRight',
+                      fontSize: 11,
+                    }}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      value,
+                      name === 'topCatch' ? 'トップ釣果（尾）' : '水位（m）',
+                    ]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="topCatch"
+                    name="トップ釣果（尾）"
+                    stroke="#0f766e"
+                    strokeWidth={2.2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="waterLevel"
+                    name="水位（m・概算）"
+                    stroke="#f97316"
+                    strokeWidth={2}
+                    strokeDasharray="4 2"
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="card">
+            <h2>月別の平均釣獲と川止め日数（イメージ）</h2>
+            <p>実データが揃ったら数値を入れ替えるだけで、そのまま理事会用スライドに使える構成です。</p>
+            <div style={{ width: "100%", height: 320 }}>
+              <ResponsiveContainer>
+                <BarChart
+                  data={monthlySummaryData}
+                  margin={{ top: 10, right: 40, bottom: 30, left: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    yAxisId="left"
+                    label={{
+                      value: '平均釣獲（尾/人日）',
+                      angle: -90,
+                      position: 'insideLeft',
+                      fontSize: 11,
+                    }}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    label={{
+                      value: '川止め日数（日/月）',
+                      angle: 90,
+                      position: 'insideRight',
+                      fontSize: 11,
+                    }}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      value,
+                      name === 'avgCatch' ? '平均釣獲（尾/人日）' : '川止め日数（日）',
+                    ]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="avgCatch"
+                    name="平均釣獲（尾/人日）"
+                    fill="#0ea5e9"
+                    radius={[6, 6, 0, 0]}
+                    barSize={32}
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="stopDays"
+                    name="川止め日数（日）"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    activeDot={{ r: 6 }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<Ayu2025Graphs />);
+  </script>
 </body>
 </html>
