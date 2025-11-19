@@ -2,10 +2,44 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>阿仁川テストページ</title>
+  <title>React テストページ</title>
 </head>
-<body>
-  <h1>阿仁川テストページ</h1>
-  <p>この文字が見えれば、GitHub Pages は正常に動いています。</p>
+<body style="margin:0; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#f8fafc; color:#0f172a;">
+  <!-- React が描画する場所 -->
+  <div id="root"></div>
+
+  <!-- React本体とReactDOMをCDNから読み込み（UMD版） -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Reactコード本体（JSXなし・Babelなしの超シンプル版） -->
+  <script>
+    // root要素を取得
+    var container = document.getElementById('root');
+
+    // rootを作成
+    var root = ReactDOM.createRoot(container);
+
+    // 表示するコンテンツ（<div>の中に<h1>, <p>を置くイメージ）
+    var element = React.createElement(
+      'div',
+      { style: { padding: '24px 16px' } },
+      [
+        React.createElement(
+          'h1',
+          { key: 'h1', style: { fontSize: '22px', marginBottom: '8px' } },
+          'Reactテスト成功'
+        ),
+        React.createElement(
+          'p',
+          { key: 'p1', style: { fontSize: '14px', color: '#64748b' } },
+          'この文章が見えれば、React自体は正常に動いています。'
+        )
+      ]
+    );
+
+    // 画面に描画
+    root.render(element);
+  </script>
 </body>
 </html>
