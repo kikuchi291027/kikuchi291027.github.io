@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>2025年 阿仁川鮎釣りシーズン（Recharts版）</title>
+  <title>2025年 阿仁川鮎釣りグラフ（React＋自前SVG版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
@@ -16,8 +16,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 32px 16px;
-      gap: 32px;
+      padding: 24px 16px 40px;
+      gap: 24px;
     }
     .header {
       width: 100%;
@@ -34,7 +34,7 @@
       margin-top: 4px;
     }
     h1 {
-      font-size: 24px;
+      font-size: 22px;
       margin: 0 0 4px;
       color: #020617;
     }
@@ -48,246 +48,367 @@
       margin: 0 0 4px;
       color: #64748b;
     }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #cbd5f5;
+      background: #ffffff;
+      color: #0f172a;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: #0f766e;
+      color: #ffffff;
+      border-color: #0f766e;
+    }
+    .tab-btn:hover {
+      background: #e0f2fe;
+    }
+    .info-box {
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      border: 1px solid #e2e8f0;
+      font-size: 12px;
+    }
+    .info-title {
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .info-line {
+      margin: 0;
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
-  <!-- React / ReactDOM / Recharts をCDNから読み込み -->
+  <!-- React / ReactDOM（CDN） -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
 
   <script>
-    // Recharts のコンポーネントを取り出す
-    const {
-      LineChart,
-      Line,
-      XAxis,
-      YAxis,
-      CartesianGrid,
-      Tooltip,
-      Legend,
-      ResponsiveContainer,
-      BarChart,
-      Bar,
-    } = Recharts;
-
     const e = React.createElement;
+    const { useState } = React;
 
-    // データ（元のTSXと同じ）
-    const catchAndLevelData = [
-      { date: '7/19', label: '7月19日', topCatch: 95, waterLevel: -0.67 },
-      { date: '8/4',  label: '8月4日',  topCatch: 86, waterLevel: -0.58 },
-      { date: '8/5',  label: '8月5日',  topCatch: 0,  waterLevel: 1.3 },
-      { date: '8/14', label: '8月14日', topCatch: 111, waterLevel: -0.6 },
-      { date: '8/15', label: '8月15日', topCatch: 28, waterLevel: 0.19 },
-      { date: '9/17', label: '9月17日', topCatch: 13, waterLevel: 1.0 },
+    // 代表日のデータ
+    const dailyData2025 = [
+      { date: '7/19', label: '7月19日', topCatch: 95, waterLevel: -0.67, note: '温泉下など・盛期手前の好調日' },
+      { date: '8/4',  label: '8月4日',  topCatch: 86, waterLevel: -0.58, note: '湯口内など・高水準の釣果' },
+      { date: '8/5',  label: '8月5日',  topCatch: 0,  waterLevel: 1.3,  note: '増水・川止め相当の1日' },
+      { date: '8/14', label: '8月14日', topCatch: 111, waterLevel: -0.6, note: 'パチンコで束釣りのピーク' },
+      { date: '8/15', label: '8月15日', topCatch: 28, waterLevel: 0.19, note: '増水後の回復途中' },
+      { date: '9/17', label: '9月17日', topCatch: 13, waterLevel: 1.0,  note: '増水・茶濁の中での残りアユ' },
     ];
 
-    const monthlySummaryData = [
-      { month: '7月', avgCatch: 45, stopDays: 0 },
-      { month: '8月', avgCatch: 40, stopDays: 8 },
-      { month: '9月', avgCatch: 12, stopDays: 12 },
+    // 月別のざっくり平均値（イメージ）
+    const monthlyData2025 = [
+      { month: '7月', avgCatch: 45, stopDays: 0,  note: '前半から安定して高水準' },
+      { month: '8月', avgCatch: 40, stopDays: 8,  note: '中旬ピーク、その後の増水で川止め増加' },
+      { month: '9月', avgCatch: 12, stopDays: 12, note: '増水・長期濁水で釣行機会が少ない' },
     ];
 
-    function Ayu2025Graphs() {
+    // 代表日グラフ（React＋SVG）
+    function DailyGraph(props) {
+      const data = props.data;
+      const [activeIndex, setActiveIndex] = useState(3); // デフォルトは8/14の束釣りにフォーカス
+
+      const maxCatch = 120;
+      const minCatch = 0;
+      const xStart = 100;
+      const xEnd = 700;
+      const yBottom = 360;
+      const yTop = 120;
+      const spanY = yBottom - yTop;
+
+      // アクティブポイント
+      const active = data[activeIndex];
+
+      const children = [];
+
+      // 背景と枠
+      children.push(
+        e('rect', { key: 'bg', x: 0, y: 0, width: 800, height: 400, fill: '#f8fafc' }),
+        e('rect', { key: 'frame', x: 60, y: 30, width: 700, height: 330, fill: '#ffffff', stroke: '#e2e8f0' })
+      );
+
+      // グリッド線
+      const gridVals = [0, 20, 40, 60, 80, 100, 120];
+      gridVals.forEach((v, i) => {
+        const y = yBottom - ((v - minCatch) / (maxCatch - minCatch)) * spanY;
+        children.push(
+          e('line', {
+            key: 'grid-' + v,
+            x1: 60, y1: y, x2: 760, y2: y,
+            stroke: '#e2e8f0',
+            'stroke-dasharray': '2 4',
+          })
+        );
+        children.push(
+          e('text', {
+            key: 'ylabel-' + v,
+            x: 55,
+            y: y + 5,
+            fontSize: 11,
+            textAnchor: 'end',
+          }, String(v))
+        );
+      });
+
+      children.push(
+        e('text', {
+          key: 'ytitle',
+          x: 20,
+          y: 40,
+          fontSize: 11,
+          transform: 'rotate(-90 20 40)',
+        }, 'トップ釣果（尾）')
+      );
+
+      // 折れ線パス
+      const polyPoints = data.map((d, i) => {
+        const x = xStart + ((xEnd - xStart) * i) / (data.length - 1);
+        const y = yBottom - ((d.topCatch - minCatch) / (maxCatch - minCatch)) * spanY;
+        return x + ',' + y;
+      }).join(' ');
+
+      children.push(
+        e('polyline', {
+          key: 'line',
+          fill: 'none',
+          stroke: '#0f766e',
+          strokeWidth: 2.5,
+          points: polyPoints,
+        })
+      );
+
+      // 各ポイント＋縦のガイドライン
+      data.forEach((d, i) => {
+        const x = xStart + ((xEnd - xStart) * i) / (data.length - 1);
+        const y = yBottom - ((d.topCatch - minCatch) / (maxCatch - minCatch)) * spanY;
+        const isActive = i === activeIndex;
+
+        if (isActive) {
+          children.push(
+            e('line', {
+              key: 'vline-' + i,
+              x1: x,
+              y1: 40,
+              x2: x,
+              y2: 360,
+              stroke: '#bfdbfe',
+              'stroke-dasharray': '4 4',
+            })
+          );
+        }
+
+        children.push(
+          e('circle', {
+              key: 'pt-' + i,
+              cx: x,
+              cy: y,
+              r: isActive ? 7 : 5,
+              fill: isActive ? '#0f766e' : '#38bdf8',
+              stroke: isActive ? '#064e3b' : '#0ea5e9',
+              strokeWidth: isActive ? 2 : 1,
+              style: { cursor: 'pointer', transition: 'all 0.15s ease-out' },
+              onMouseEnter: function () { setActiveIndex(i); },
+            }
+          )
+        );
+
+        children.push(
+          e('text', {
+            key: 'xlabel-' + i,
+            x: x,
+            y: 380,
+            fontSize: 11,
+            textAnchor: 'middle',
+          }, d.date)
+        );
+      });
+
+      children.push(
+        e('text', {
+          key: 'xtitle',
+          x: 410,
+          y: 395,
+          fontSize: 11,
+          textAnchor: 'middle',
+        }, '日付（代表日）')
+      );
+
+      return e('div', null, [
+        e('div', { key: 'info', className: 'info-box' }, [
+          e('div', { key: 't', className: 'info-title' }, '代表日：' + active.label),
+          e('p', { key: 'l1', className: 'info-line' }, 'トップ釣果：' + active.topCatch + '尾'),
+          e('p', { key: 'l2', className: 'info-line' }, '水位（概算）：' + active.waterLevel + ' m'),
+          e('p', { key: 'l3', className: 'info-line' }, active.note),
+          e('p', { key: 'tip', className: 'info-line', style: { marginTop: 4, color: '#94a3b8' } },
+            '※丸にマウスを乗せると、右上の情報が切り替わります。'
+          ),
+        ]),
+        e('svg', { key: 'graph', width: '100%', viewBox: '0 0 800 400' }, children),
+      ]);
+    }
+
+    // 月別グラフ（バー＋インフォ）
+    function MonthlyGraph(props) {
+      const data = props.data;
+      const [activeIndex, setActiveIndex] = useState(0);
+
+      const maxAvg = 50;
+      const xPositions = [200, 400, 600];
+      const yBottom = 360;
+      const yTop = 160;
+      const spanY = yBottom - yTop;
+
+      const active = data[activeIndex];
+
+      const children = [];
+
+      // 背景と枠
+      children.push(
+        e('rect', { key: 'bg', x: 0, y: 0, width: 800, height: 400, fill: '#f8fafc' }),
+        e('rect', { key: 'frame', x: 60, y: 30, width: 700, height: 330, fill: '#ffffff', stroke: '#e2e8f0' })
+      );
+
+      // グリッド（0〜50）
+      const gridVals = [0, 10, 20, 30, 40, 50];
+      gridVals.forEach((v) => {
+        const y = yBottom - (v / maxAvg) * spanY;
+        children.push(
+          e('line', {
+            key: 'grid-' + v,
+            x1: 60, y1: y, x2: 760, y2: y,
+            stroke: '#e2e8f0',
+            'stroke-dasharray': '2 4',
+          })
+        );
+        children.push(
+          e('text', {
+            key: 'ylabel-' + v,
+            x: 55,
+            y: y + 5,
+            fontSize: 11,
+            textAnchor: 'end',
+          }, String(v))
+        );
+      });
+
+      children.push(
+        e('text', {
+          key: 'ytitle',
+          x: 20,
+          y: 40,
+          fontSize: 11,
+          transform: 'rotate(-90 20 40)',
+        }, '平均釣獲（尾／人日）')
+      );
+
+      // 各月のバー
+      data.forEach((d, i) => {
+        const xCenter = xPositions[i];
+        const barWidth = 80;
+        const barHeight = (d.avgCatch / maxAvg) * spanY;
+        const yTopBar = yBottom - barHeight;
+        const isActive = i === activeIndex;
+
+        children.push(
+          e('rect', {
+            key: 'bar-' + i,
+            x: xCenter - barWidth / 2,
+            y: yTopBar,
+            width: barWidth,
+            height: barHeight,
+            fill: isActive ? '#0ea5e9' : '#7dd3fc',
+            stroke: isActive ? '#0369a1' : '#0ea5e9',
+            strokeWidth: isActive ? 2 : 1,
+            rx: 8,
+            style: { cursor: 'pointer', transition: 'all 0.15s ease-out' },
+            onMouseEnter: function () { setActiveIndex(i); },
+          })
+        );
+
+        children.push(
+          e('text', {
+            key: 'xlabel-' + i,
+            x: xCenter,
+            y: 380,
+            fontSize: 11,
+            textAnchor: 'middle',
+          }, d.month)
+        );
+      });
+
+      children.push(
+        e('text', {
+          key: 'xtitle',
+          x: 410,
+          y: 395,
+          fontSize: 11,
+          textAnchor: 'middle',
+        }, '月別平均釣獲（イメージ）')
+      );
+
+      return e('div', null, [
+        e('div', { key: 'info', className: 'info-box' }, [
+          e('div', { key: 't', className: 'info-title' }, '月別：' + active.month),
+          e('p', { key: 'l1', className: 'info-line' }, '平均釣獲：' + active.avgCatch + '尾／人日'),
+          e('p', { key: 'l2', className: 'info-line' }, '川止め日数（目安）：' + active.stopDays + '日／月'),
+          e('p', { key: 'l3', className: 'info-line' }, active.note),
+          e('p', { key: 'tip', className: 'info-line', style: { marginTop: 4, color: '#94a3b8' } },
+            '※棒グラフにマウスを乗せると、上の説明が切り替わります。'
+          ),
+        ]),
+        e('svg', { key: 'graph', width: '100%', viewBox: '0 0 800 400' }, children),
+      ]);
+    }
+
+    function App() {
+      const [view, setView] = useState('daily');
+
       return e('div', { className: 'outer' }, [
-        // ヘッダー
         e('div', { key: 'header', className: 'header' }, [
-          e('h1', { key: 'h1' }, '2025年 阿仁川鮎釣りシーズン（例示データ）'),
-          e(
-            'p',
-            { key: 'p1' },
-            '※HP記事から拾った代表日をもとにしたイメージグラフです（厳密な統計ではありません）。'
+          e('h1', { key: 'h1' }, '2025年 阿仁川鮎釣りグラフ（React＋自前SVG版）'),
+          e('p', { key: 'p1' },
+            '代表日のトップ釣果と、月別のざっくり平均を切り替えて表示します。点や棒にマウスを乗せると、上の説明が変わります。'
           ),
         ]),
-
-        // グラフ1：トップ釣果と水位
-        e('div', { key: 'card1', className: 'card' }, [
-          e('h2', { key: 'h2-1' }, '代表日のトップ釣果と水位の推移（2025年）'),
-          e(
-            'p',
-            { key: 'p2-1' },
-            '左軸：1人のトップ釣果（尾）／右軸：阿仁前田付近の水位変化（m・概算）。'
-          ),
-          e(
-            'div',
-            { key: 'chart1-wrap', style: { width: '100%', height: '320px' } },
-            e(
-              ResponsiveContainer,
-              { width: '100%', height: '100%' },
-              e(
-                LineChart,
-                {
-                  data: catchAndLevelData,
-                  margin: { top: 10, right: 40, bottom: 30, left: 0 },
-                },
-                [
-                  e(CartesianGrid, {
-                    key: 'grid1',
-                    strokeDasharray: '3 3',
-                    stroke: '#e2e8f0',
-                  }),
-                  e(XAxis, {
-                    key: 'x1',
-                    dataKey: 'label',
-                    tick: { fontSize: 12 },
-                  }),
-                  e(YAxis, {
-                    key: 'y1-left',
-                    yAxisId: 'left',
-                    label: {
-                      value: 'トップ釣果（尾）',
-                      angle: -90,
-                      position: 'insideLeft',
-                      fontSize: 11,
-                    },
-                    tick: { fontSize: 11 },
-                  }),
-                  e(YAxis, {
-                    key: 'y1-right',
-                    yAxisId: 'right',
-                    orientation: 'right',
-                    label: {
-                      value: '水位（m / 概算）',
-                      angle: 90,
-                      position: 'insideRight',
-                      fontSize: 11,
-                    },
-                    tick: { fontSize: 11 },
-                  }),
-                  e(Tooltip, {
-                    key: 'tooltip1',
-                    formatter: (value, name) => [
-                      value,
-                      name === 'topCatch' ? 'トップ釣果（尾）' : '水位（m）',
-                    ],
-                  }),
-                  e(Legend, { key: 'legend1', wrapperStyle: { fontSize: 12 } }),
-                  e(Line, {
-                    key: 'line-top',
-                    yAxisId: 'left',
-                    type: 'monotone',
-                    dataKey: 'topCatch',
-                    name: 'トップ釣果（尾）',
-                    stroke: '#0f766e',
-                    strokeWidth: 2.2,
-                    dot: { r: 4 },
-                    activeDot: { r: 6 },
-                  }),
-                  e(Line, {
-                    key: 'line-level',
-                    yAxisId: 'right',
-                    type: 'monotone',
-                    dataKey: 'waterLevel',
-                    name: '水位（m・概算）',
-                    stroke: '#f97316',
-                    strokeWidth: 2,
-                    strokeDasharray: '4 2',
-                    dot: { r: 3 },
-                  }),
-                ]
-              )
-            )
-          ),
-        ]),
-
-        // グラフ2：月別平均釣獲と川止め日数
-        e('div', { key: 'card2', className: 'card' }, [
-          e('h2', { key: 'h2-2' }, '月別の平均釣獲と川止め日数（イメージ）'),
-          e(
-            'p',
-            { key: 'p2-2' },
-            '実データが揃ったら数値を入れ替えるだけで、そのまま理事会用スライドに使える構成です。'
-          ),
-          e(
-            'div',
-            { key: 'chart2-wrap', style: { width: '100%', height: '320px' } },
-            e(
-              ResponsiveContainer,
-              { width: '100%', height: '100%' },
-              e(
-                BarChart,
-                {
-                  data: monthlySummaryData,
-                  margin: { top: 10, right: 40, bottom: 30, left: 0 },
-                },
-                [
-                  e(CartesianGrid, {
-                    key: 'grid2',
-                    strokeDasharray: '3 3',
-                    stroke: '#e2e8f0',
-                  }),
-                  e(XAxis, {
-                    key: 'x2',
-                    dataKey: 'month',
-                    tick: { fontSize: 12 },
-                  }),
-                  e(YAxis, {
-                    key: 'y2-left',
-                    yAxisId: 'left',
-                    label: {
-                      value: '平均釣獲（尾/人日）',
-                      angle: -90,
-                      position: 'insideLeft',
-                      fontSize: 11,
-                    },
-                    tick: { fontSize: 11 },
-                  }),
-                  e(YAxis, {
-                    key: 'y2-right',
-                    yAxisId: 'right',
-                    orientation: 'right',
-                    label: {
-                      value: '川止め日数（日/月）',
-                      angle: 90,
-                      position: 'insideRight',
-                      fontSize: 11,
-                    },
-                    tick: { fontSize: 11 },
-                  }),
-                  e(Tooltip, {
-                    key: 'tooltip2',
-                    formatter: (value, name) => [
-                      value,
-                      name === 'avgCatch'
-                        ? '平均釣獲（尾/人日）'
-                        : '川止め日数（日）',
-                    ],
-                  }),
-                  e(Legend, { key: 'legend2', wrapperStyle: { fontSize: 12 } }),
-                  e(Bar, {
-                    key: 'bar-avg',
-                    yAxisId: 'left',
-                    dataKey: 'avgCatch',
-                    name: '平均釣獲（尾/人日）',
-                    fill: '#0ea5e9',
-                    radius: [6, 6, 0, 0],
-                    barSize: 32,
-                  }),
-                  e(Line, {
-                    key: 'line-stop',
-                    yAxisId: 'right',
-                    type: 'monotone',
-                    dataKey: 'stopDays',
-                    name: '川止め日数（日）',
-                    stroke: '#ef4444',
-                    strokeWidth: 2,
-                    activeDot: { r: 6 },
-                  }),
-                ]
-              )
-            )
-          ),
+        e('div', { key: 'card', className: 'card' }, [
+          e('div', { key: 'tabs', className: 'tabs' }, [
+            e('button', {
+              key: 'btn-daily',
+              className: 'tab-btn' + (view === 'daily' ? ' active' : ''),
+              onClick: function () { setView('daily'); },
+            }, '代表日グラフ'),
+            e('button', {
+              key: 'btn-monthly',
+              className: 'tab-btn' + (view === 'monthly' ? ' active' : ''),
+              onClick: function () { setView('monthly'); },
+            }, '月別グラフ'),
+          ]),
+          view === 'daily'
+            ? e(DailyGraph, { key: 'g-d', data: dailyData2025 })
+            : e(MonthlyGraph, { key: 'g-m', data: monthlyData2025 }),
         ]),
       ]);
     }
 
-    // Reactで描画
     const container = document.getElementById('root');
     const root = ReactDOM.createRoot(container);
-    root.render(e(Ayu2025Graphs));
+    root.render(e(App));
   </script>
 </body>
 </html>
+
