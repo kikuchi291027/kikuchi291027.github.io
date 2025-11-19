@@ -191,12 +191,13 @@
         })
       );
 
-      // 各ポイント
+      // 各ポイント（タップもしやすいよう大きめ）
       data.forEach((d, i) => {
         const x = xStart + ((xEnd - xStart) * i) / (data.length - 1);
         const y = yBottom - ((d.topCatch - minCatch) / (maxCatch - minCatch)) * spanY;
         const isActive = i === activeIndex;
 
+        // アクティブな点の縦ガイド
         if (isActive) {
           children.push(
             e('line', {
@@ -216,13 +217,15 @@
               key: 'pt-' + i,
               cx: x,
               cy: y,
-              // ★ここを大きくしました
-              r: isActive ? 11 : 9,
+              // ★さらに大きく：スマホでも押しやすいサイズ
+              r: isActive ? 16 : 13,
               fill: isActive ? '#0f766e' : '#38bdf8',
               stroke: isActive ? '#064e3b' : '#0ea5e9',
-              strokeWidth: isActive ? 2 : 1,
+              strokeWidth: isActive ? 2.5 : 1.5,
               style: { cursor: 'pointer', transition: 'all 0.15s ease-out' },
+              // マウスホバーでも、タップ(クリック)でも反応
               onMouseEnter: function () { setActiveIndex(i); },
+              onClick: function () { setActiveIndex(i); },
             }
           )
         );
@@ -258,7 +261,7 @@
             key: 'tip',
             className: 'info-line',
             style: { marginTop: 4, color: '#6b7280' }
-          }, '※丸にマウスを乗せると、上の情報が切り替わります。'),
+          }, '※点をタップ／マウスを乗せると、上の情報が切り替わります。'),
         ]),
         e('svg', { key: 'graph', width: '100%', viewBox: '0 0 800 400' }, children),
       ]);
@@ -276,6 +279,10 @@
       const spanY = yBottom - yTop;
 
       const active = data[activeIndex];
+
+      // 月ごとに色を変える（7月＝青、8月＝オレンジ、9月＝緑）
+      const baseColors = ['#60a5fa', '#f97316', '#22c55e'];
+      const activeColors = ['#1d4ed8', '#c2410c', '#15803d'];
 
       const children = [];
 
@@ -326,6 +333,9 @@
         const yTopBar = yBottom - barHeight;
         const isActive = i === activeIndex;
 
+        const fillColor = isActive ? activeColors[i] : baseColors[i];
+        const strokeColor = isActive ? activeColors[i] : baseColors[i];
+
         children.push(
           e('rect', {
             key: 'bar-' + i,
@@ -333,12 +343,13 @@
             y: yTopBar,
             width: barWidth,
             height: barHeight,
-            fill: isActive ? '#0ea5e9' : '#7dd3fc',
-            stroke: isActive ? '#0369a1' : '#0ea5e9',
-            strokeWidth: isActive ? 2 : 1,
+            fill: fillColor,
+            stroke: strokeColor,
+            strokeWidth: isActive ? 2.5 : 1.5,
             rx: 8,
             style: { cursor: 'pointer', transition: 'all 0.15s ease-out' },
             onMouseEnter: function () { setActiveIndex(i); },
+            onClick: function () { setActiveIndex(i); },
           })
         );
 
@@ -373,7 +384,7 @@
             key: 'tip',
             className: 'info-line',
             style: { marginTop: 4, color: '#6b7280' }
-          }, '※棒グラフにマウスを乗せると、上の説明が切り替わります。'),
+          }, '※棒グラフをタップ／マウスを乗せると、上の説明が切り替わります。'),
         ]),
         e('svg', { key: 'graph', width: '100%', viewBox: '0 0 800 400' }, children),
       ]);
@@ -386,7 +397,7 @@
         e('div', { key: 'header', className: 'header' }, [
           e('h1', { key: 'h1' }, '2025年 阿仁川鮎釣りグラフ（React＋自前SVG版）'),
           e('p', { key: 'p1' },
-            '代表日のトップ釣果と、月別のざっくり平均を切り替えて表示します。点や棒にマウスを乗せると、上の説明が変わります。'
+            '代表日のトップ釣果と、月別のざっくり平均を切り替えて表示します。点や棒に触れると、上の説明が変わります。'
           ),
         ]),
         e('div', { key: 'card', className: 'card' }, [
@@ -415,4 +426,3 @@
   </script>
 </body>
 </html>
-
